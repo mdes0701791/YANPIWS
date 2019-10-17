@@ -1,5 +1,6 @@
 # I2C Bus: BME280 sensor & 0.96" OLED Display
 
+# Intro
 For the folks who want to support super tiny displays, this directory has
 info how to show up to two temperatures and humidity from your YANPIWS install like this:
 
@@ -15,7 +16,7 @@ Thanks to [code electron](http://codelectron.com/how-to-setup-oled-display-with-
  for images and tecno info!
 
 
-# Requirements
+## Requirements
 
 ## Hardware 
 These python scripts assume you're using I2C compatible hardware.  For my development, I used 
@@ -31,7 +32,7 @@ These python scripts assume you're using I2C compatible hardware.  For my develo
 * I2C bus enabled (eg `raspbi-config` or `armbian-config`)
 * Adafruit-GPIO Drivers for OLED installed
 
-# Quick start
+## Quick start
 
 1. You should already have you screen set up and working.  You should know the I2C bus, 
 either `1` or `0`, after running `i2cdetect -l`. As well, you should know the two 
@@ -55,11 +56,82 @@ The `yanpiws_temp`s are the IDs of the temps in your `config.csv`:
     ```
  1. To see instant live temps of your local sensor, run `python3 live_temp_hum_bme280.py`. To see the
  remote temps from your main YANPIWS install, run  `python3 remote_temps_humid.py`.
- 1. To ensure this runs at boot and stays runninig, consider setting up a `systemd` job.  tecadmin.net has [a great write up](https://tecadmin.net/setup-autorun-python-script-using-systemd/) on this!
- 
+ 1. To ensure this runs at boot and stays running, consider setting up a `systemd` job. See below and
+  tecadmin.net has [a great write up](https://tecadmin.net/setup-autorun-python-script-using-systemd/)
+   on this!
+
 If you need more help - read up on the "Long Start" below.
- 
-# Long Start
+
+## Systemd for python
+
+### live_temp_hum_bme280.py on raspbian on Raspberry Pi
+
+Start by editing the systemd entry:
+
+```
+vim /lib/systemd/system/show-realtime-temps.service
+```
+
+Put this contents in:
+
+```
+[Unit]
+Description=Show real time temps on external mini screen
+After=multi-user.target
+[email protected]
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /var/www/html/I2C.bme280.oled/live_temp_hum_bme280.py
+StandardInput=tty-force
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then reload systemd controller, enable and start! When you're done check status:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable show-realtime-temps.service
+sudo systemctl start show-realtime-temps.service
+sudo systemctl status show-realtime-temps.service
+```
+
+### remote_temps_humid.py on Ubuntu on  Orange Pi Zero
+
+Start by editing the systemd entry:
+
+```
+sudo vim /lib/systemd/system/show-remote-temps.service
+```
+
+Put this contents in:
+
+```
+[Unit]
+Description=Show remote temps on external mini screen
+
+[Service]
+User=root
+WorkingDirectory=/var/www/html/I2C.bme280.oled/
+ExecStart=/usr/bin/python3 /var/www/html/I2C.bme280.oled/remote_temps_humid.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then reloed systemd controller, enable and start! When you're done check status:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable show-remote-temps
+sudo systemctl start show-remote-temps
+sudo systemctl status show-remote-temps
+```
+
+## Long Start
  
 These are my notes for doing an install on an Orange Pi Zero. 
  
